@@ -1,0 +1,22 @@
+{
+  "short_name": "옷차림 추천",
+  "name": "날씨 기반 개인 맞춤형 옷차림 추천 앱 (OOTD)",
+  "description": "날씨와 체질, 활동량을 고려해 오늘 가장 어울리는 옷차림을 매칭해 드립니다.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3b82f6",
+  "background_color": "#e0effe",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
