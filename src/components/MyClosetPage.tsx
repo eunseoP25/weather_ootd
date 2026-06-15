@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Sparkles, Folder, Tag, HelpCircle, Thermometer } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Sparkles, Folder, Tag, HelpCircle, Thermometer, Copy, ExternalLink } from 'lucide-react';
 import { CurrentWeather, UserSettings, MyClothing } from '../types/weather';
 
 interface MyClosetPageProps {
@@ -50,6 +50,15 @@ const clothingEmojis: { [key: string]: string } = {
   '청자켓': '🧥',
   '검정 후드티': '👕',
   '흰 반팔': '👕',
+  '린넨 셔츠': '👔',
+  '데님 반바지': '🩳',
+  '가죽 샌들': '👡',
+  '린넨 와이드 팬츠': '👖',
+  '방한 부츠': '👢',
+  '터틀넥 니트': '🧶',
+  '오버핏 셔츠': '👔',
+  '와이드 슬랙스': '👖',
+  '가죽 로퍼': '👞',
 };
 
 const CATEGORIES = [
@@ -79,6 +88,123 @@ const autoGuessSeason = (name: string): MyClothing['season'] => {
   return 'all';
 };
 
+interface RecommendCandidate {
+  name: string;
+  category: MyClothing['category'];
+  keywords: string[];
+  reason: string;
+}
+
+const RECOMMEND_CANDIDATES: Record<'summer' | 'winter' | 'spring_autumn', RecommendCandidate[]> = {
+  summer: [
+    {
+      name: '린넨 셔츠',
+      category: 'top',
+      keywords: ['린넨', '셔츠', '남방'],
+      reason: '더운 여름 날씨에 시원하고 쾌적하게 입기 좋으며 격식 있는 자리에도 제격입니다.'
+    },
+    {
+      name: '데님 반바지',
+      category: 'bottom',
+      keywords: ['반바지', '쇼츠', '데님 쇼츠', '청반바지'],
+      reason: '흰 반팔티나 셔츠 등 어떤 상의와 매치해도 잘 어울리는 기본 여름 하의입니다.'
+    },
+    {
+      name: '얇은 가디건',
+      category: 'outer',
+      keywords: ['가디건', '아우터', '가벼운 가디건', '볼레로'],
+      reason: '실내의 강한 에어컨 바람이나 아침저녁 선선한 바람을 막기에 좋습니다.'
+    },
+    {
+      name: '가죽 샌들',
+      category: 'shoes',
+      keywords: ['샌들', '슬리퍼', '조리'],
+      reason: '캐주얼하면서도 포멀한 룩에 모두 잘 어울려 여름 코디에 필수적입니다.'
+    },
+    {
+      name: '린넨 와이드 팬츠',
+      category: 'bottom',
+      keywords: ['린넨 바지', '린넨 팬츠', '와이드 팬츠', '린넨'],
+      reason: '달라붙지 않아 통기성이 좋고 쾌적한 착용감을 유지해 줍니다.'
+    }
+  ],
+  winter: [
+    {
+      name: '울 코트',
+      category: 'outer',
+      keywords: ['코트', '울코트', '롱코트'],
+      reason: '패딩보다 포멀하고 격식 있는 자리에 입기 좋은 겨울철 필수 아우터입니다.'
+    },
+    {
+      name: '목도리',
+      category: 'etc',
+      keywords: ['목도리', '머플러'],
+      reason: '목을 따뜻하게 보호해 주는 것만으로도 체온을 3도 이상 높일 수 있습니다.'
+    },
+    {
+      name: '기모 슬랙스',
+      category: 'bottom',
+      keywords: ['기모', '슬랙스'],
+      reason: '다리를 따뜻하게 유지하면서도 깔끔한 핏을 연출할 수 있는 하의입니다.'
+    },
+    {
+      name: '방한 부츠',
+      category: 'shoes',
+      keywords: ['부츠', '어그', '방한화', '패딩 슈즈'],
+      reason: '눈길 미끄럼을 방지하고 발끝까지 전해지는 한기를 효과적으로 차단합니다.'
+    },
+    {
+      name: '터틀넥 니트',
+      category: 'top',
+      keywords: ['니트', '목폴라', '터틀넥'],
+      reason: '단독으로 입거나 아우터 안에 이너로 활용하기 좋아 겨울철 활용도가 높습니다.'
+    }
+  ],
+  spring_autumn: [
+    {
+      name: '트렌치코트',
+      category: 'outer',
+      keywords: ['트렌치', '코트'],
+      reason: '봄과 가을의 클래식한 분위기를 연출하기에 가장 좋은 대표적인 아우터입니다.'
+    },
+    {
+      name: '오버핏 셔츠',
+      category: 'top',
+      keywords: ['셔츠', '남방', '옥스포드'],
+      reason: '단독으로 입거나 가벼운 티셔츠 위에 아우터처럼 걸치기 좋아 활용도가 높습니다.'
+    },
+    {
+      name: '와이드 슬랙스',
+      category: 'bottom',
+      keywords: ['슬랙스', '슬랙'],
+      reason: '셔츠나 맨투맨 등 어떤 상의와 매치해도 정돈된 느낌을 주는 기본 아이템입니다.'
+    },
+    {
+      name: '가죽 로퍼',
+      category: 'shoes',
+      keywords: ['로퍼', '구두', '더비'],
+      reason: '스니커즈보다 단정하고 세련된 느낌을 주어 포멀/캐주얼 코디에 유용합니다.'
+    },
+    {
+      name: '바람막이',
+      category: 'outer',
+      keywords: ['바람막이', '윈드브레이커', '바람'],
+      reason: '기온 차가 큰 환절기에 가볍게 걸쳐 비바람을 막고 체온을 유지하기 좋습니다.'
+    }
+  ]
+};
+
+const formatRecommendationText = (items: RecommendCandidate[]) => {
+  return items.map(item => {
+    const name = item.name;
+    const reason = item.reason;
+    return `[${name}]
+- 추천 이유: ${reason}
+- 에이블리 링크: https://m.a-bly.com/search?keyword=${name}
+- 지그재그 링크: https://zigzag.kr/search?keyword=${name}`;
+  }).join('\n\n');
+};
+
 export const MyClosetPage: React.FC<MyClosetPageProps> = ({
   weather,
   settings,
@@ -93,15 +219,8 @@ export const MyClosetPage: React.FC<MyClosetPageProps> = ({
     } catch (e) {
       console.error(e);
     }
-    // Default initial mock items if empty to help demo
-    return [
-      { id: '1', name: '청자켓', category: 'outer', season: 'spring_autumn' },
-      { id: '2', name: '가디건', category: 'outer', season: 'spring_autumn' },
-      { id: '3', name: '흰 반팔', category: 'top', season: 'summer' },
-      { id: '4', name: '검정 후드티', category: 'top', season: 'spring_autumn' },
-      { id: '5', name: '청바지', category: 'bottom', season: 'all' },
-      { id: '6', name: '슬랙스', category: 'bottom', season: 'all' },
-    ];
+    // Starts completely empty as requested by user
+    return [];
   });
 
   // Save to localStorage when updated
@@ -121,6 +240,16 @@ export const MyClosetPage: React.FC<MyClosetPageProps> = ({
 
   // Active Category filter tab (manager section)
   const [activeTab, setActiveTab] = useState<'all' | MyClothing['category']>('all');
+
+  // Clipboard state
+  const [copied, setCopied] = useState(false);
+  const handleCopyRecommendations = (items: RecommendCandidate[]) => {
+    const text = formatRecommendationText(items);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   // Auto guess season on input change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,11 +327,11 @@ export const MyClosetPage: React.FC<MyClosetPageProps> = ({
     const dayNightOffset = isNight ? -1.5 : 1.5;
     const recommendedTemp = apparentTemp + sensitivityOffset + activityOffset + dayNightOffset;
 
-    // 2. Map temp to season
+    // 2. Map temp to season (adjusted for shortened Korean spring/autumn)
     let targetSeason: 'summer' | 'spring_autumn' | 'winter' = 'spring_autumn';
-    if (recommendedTemp >= 23) {
+    if (apparentTemp >= 18) {
       targetSeason = 'summer';
-    } else if (recommendedTemp < 12) {
+    } else if (apparentTemp < 15) {
       targetSeason = 'winter';
     }
 
@@ -268,10 +397,63 @@ export const MyClosetPage: React.FC<MyClosetPageProps> = ({
     return { combo, reason };
   };
 
+  // --- Closet missing items recommendation generator ---
+  const getStylistRecommendations = () => {
+    // 1. Calculate recommended temp
+    const { coldSensitivity, activityLevel } = settings;
+    const apparentTemp = weather.apparentTemp;
+
+    let sensitivityOffset = 0;
+    if (coldSensitivity === 'cold') sensitivityOffset = -3;
+    if (coldSensitivity === 'hot') sensitivityOffset = 3;
+
+    let activityOffset = 0;
+    if (activityLevel === 'indoor') activityOffset = -1;
+    if (activityLevel === 'outdoor') activityOffset = 2;
+
+    const currentHour = new Date().getHours();
+    const isNight = currentHour >= 19 || currentHour < 6;
+    const dayNightOffset = isNight ? -1.5 : 1.5;
+    const recommendedTemp = apparentTemp + sensitivityOffset + activityOffset + dayNightOffset;
+
+    // 2. Map temp to season (adjusted for shortened Korean spring/autumn)
+    let targetSeason: 'summer' | 'spring_autumn' | 'winter' = 'spring_autumn';
+    if (apparentTemp >= 18) {
+      targetSeason = 'summer';
+    } else if (apparentTemp < 15) {
+      targetSeason = 'winter';
+    }
+
+    const candidates = RECOMMEND_CANDIDATES[targetSeason];
+
+    // Filter logic: Exclude candidates where user owns a similar item in that category (contains candidate's keywords)
+    const filtered = candidates.filter(candidate => {
+      return !clothes.some(userItem => {
+        if (userItem.category !== candidate.category) return false;
+        const lowerName = userItem.name.toLowerCase();
+        return candidate.keywords.some(kw => lowerName.includes(kw.toLowerCase()));
+      });
+    });
+
+    // Ensure 3-5 items are recommended. If fewer than 3, top up with other items from candidates list
+    let finalRecommendations = [...filtered];
+    if (finalRecommendations.length < 3) {
+      const remainingCandidates = candidates.filter(c => !finalRecommendations.some(fr => fr.name === c.name));
+      for (const rc of remainingCandidates) {
+        if (finalRecommendations.length >= 3) break;
+        finalRecommendations.push(rc);
+      }
+    }
+
+    return finalRecommendations.slice(0, 5);
+  };
+
   const { combo, reason } = getClosetRecommendation();
   const comboString = combo.length > 0 
     ? combo.map(c => c.name).join(' + ')
     : '추천 아이템 없음';
+
+  const stylistItems = getStylistRecommendations();
 
   // Filter manager list by active tab
   const filteredClothes = activeTab === 'all'
@@ -368,6 +550,88 @@ export const MyClosetPage: React.FC<MyClosetPageProps> = ({
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-350 leading-relaxed bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100/50 dark:border-slate-800/40">
                 {reason}
               </p>
+            </div>
+          </div>
+
+          {/* Card 2: AI 스타일리스트의 부족한 아이템 추천 */}
+          <div className="glass-card rounded-3xl p-6 relative overflow-hidden border border-white/20 shadow-lg flex flex-col gap-4 mt-6">
+            <div className="absolute top-[-30px] right-[-30px] w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold tracking-wider uppercase text-indigo-650 dark:text-indigo-400 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-1.5 shadow-sm">
+                <Sparkles size={12} className="animate-pulse" />
+                AI 스타일리스트 추천
+              </span>
+
+              <button
+                onClick={() => handleCopyRecommendations(stylistItems)}
+                className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700/50 rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                title="추천 텍스트 복사"
+              >
+                <Copy size={11} />
+                {copied ? '복사됨!' : '전체 복사'}
+              </button>
+            </div>
+
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              현재 옷장을 분석하여 추가로 소장하면 좋을 부족한 아이템 {stylistItems.length}개를 추천해 드립니다.
+            </p>
+
+            <div className="h-px bg-slate-100 dark:bg-slate-800/60 my-1" />
+
+            {/* Recommendations List */}
+            <div className="flex flex-col gap-3">
+              {stylistItems.map((item, idx) => (
+                <div key={idx} className="p-3 bg-white/60 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50 rounded-2xl flex flex-col gap-2 shadow-xs hover:border-indigo-100 dark:hover:border-indigo-950 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100/30">
+                        {clothingEmojis[item.name] || '👕'}
+                      </span>
+                      <span className="font-extrabold text-sm text-slate-850 dark:text-slate-200">
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100/80 text-slate-600 dark:bg-slate-900 dark:text-slate-400 border border-slate-200/10">
+                      {CATEGORIES.find(c => c.id === item.category)?.name || '기타'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-350 leading-relaxed">
+                    {item.reason}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <a
+                      href={`https://m.a-bly.com/search?keyword=${encodeURIComponent(item.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-extrabold text-pink-650 hover:text-pink-750 dark:text-pink-400 dark:hover:text-pink-300 flex items-center gap-0.5 transition-colors cursor-pointer"
+                    >
+                      에이블리 <ExternalLink size={10} />
+                    </a>
+                    <span className="text-slate-300 dark:text-slate-700 text-xs">|</span>
+                    <a
+                      href={`https://zigzag.kr/search?keyword=${encodeURIComponent(item.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-extrabold text-purple-650 hover:text-purple-750 dark:text-purple-400 dark:hover:text-purple-300 flex items-center gap-0.5 transition-colors cursor-pointer"
+                    >
+                      지그재그 <ExternalLink size={10} />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Hidden raw format output text field */}
+            <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-950/20 rounded-2xl border border-slate-150/40 dark:border-slate-800/40">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1.5">
+                출력 포맷 (원문)
+              </span>
+              <pre className="text-[10px] font-mono text-slate-600 dark:text-slate-400 whitespace-pre-wrap select-all leading-normal max-h-40 overflow-y-auto pr-1">
+                {formatRecommendationText(stylistItems)}
+              </pre>
             </div>
           </div>
         </div>
