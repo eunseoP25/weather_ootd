@@ -1,7 +1,6 @@
 const CACHE_NAME = 'ootd-app-cache-v1';
 const ASSETS_TO_CACHE = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -35,34 +34,46 @@ self.addEventListener('activate', (e) => {
 
 // Intercept fetch requests and serve from cache if offline
 self.addEventListener('fetch', (e) => {
+  const req = e.request;
+
   // Do not cache KMA API requests (always live)
-  if (e.request.url.includes('/api/kma') || e.request.url.includes('apis.data.go.kr')) {
-    e.respondWith(fetch(e.request));
+  if (
+    req.url.includes('/api/kma') ||
+    req.url.includes('apis.data.go.kr')
+  ) {
+    e.respondWith(fetch(req));
+    return;
+  }
+  
+  //1: 페이지 이동은 무조건 최신
+  if (req.mode === 'navigate') {
+    e.respondWith(fetch(req));
     return;
   }
 
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
+    caches.match(req).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(e.request).then((networkResponse) => {
-        // Cache newly requested local resources on the fly
+
+      return fetch(req).then((networkResponse) => {
+        //Cache newly requested local resources on the fly
         if (
           networkResponse.status === 200 &&
-          e.request.url.startsWith(self.location.origin) &&
-          !e.request.url.includes('hot-update') // Avoid caching vite hot module updates
+          req.url.startsWith(self.location.origin) &&
+          !req.url.includes('hot_updates')
         ) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
+            cache.put(req, responseToCache);
           });
         }
+
         return networkResponse;
       }).catch(() => {
-        // If offline and request fails
-        if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
+        if (req.mode === 'navigate') {
+          return fetch(req);
         }
       });
     })
