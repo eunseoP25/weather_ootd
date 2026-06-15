@@ -4,9 +4,9 @@ import { useWeather } from '../hooks/useWeather';
 import { useSettings } from '../hooks/useSettings';
 import { WeatherCard } from '../components/WeatherCard';
 import { OutfitRecommendation } from '../components/OutfitRecommendation';
-import { TipsCard } from '../components/TipsCard';
 import { HourlyForecast } from '../components/HourlyForecast';
 import { ThreeDayForecastPage } from '../components/ThreeDayForecastPage';
+import { MyClosetPage } from '../components/MyClosetPage';
 import { FavoriteLocations } from '../components/FavoriteLocations';
 import { WeatherSkeleton } from '../components/WeatherSkeleton';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
@@ -31,7 +31,7 @@ export const MainPage: React.FC = () => {
   const { settings, updateColdSensitivity, updateActivityLevel } = useSettings();
 
   // View states
-  const [currentView, setCurrentView] = useState<'main' | 'forecast3days'>('main');
+  const [currentView, setCurrentView] = useState<'main' | 'forecast3days' | 'mycloset'>('main');
 
   // Dropdown states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -292,6 +292,15 @@ export const MainPage: React.FC = () => {
                   >
                     <span className="text-base">📅</span> 3일간 날씨
                   </button>
+                  <button
+                    onClick={() => {
+                      setCurrentView('mycloset');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="text-base">👔</span> 내 옷장 추천
+                  </button>
                 </div>
               )}
             </div>
@@ -345,6 +354,13 @@ export const MainPage: React.FC = () => {
               settings={settings}
               onBack={() => setCurrentView('main')}
             />
+          ) : currentView === 'mycloset' ? (
+            <MyClosetPage
+              weather={weatherData.current}
+              settings={settings}
+              locationName={weatherData.locationName}
+              onBack={() => setCurrentView('main')}
+            />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               
@@ -361,15 +377,10 @@ export const MainPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Outing Tips, Outfit Recommendation */}
+              {/* Right Column: Outfit Recommendation */}
               <div className="flex flex-col gap-6">
-                {/* Outing Tips */}
-                <div className="flex flex-col animate-slide-up" style={{ animationDelay: '150ms' }}>
-                  <TipsCard tips={getClothingRecommendation(weatherData.current, settings).tips} />
-                </div>
-                
                 {/* Outfit Recommendation */}
-                <div className="flex flex-col animate-slide-up" style={{ animationDelay: '250ms' }}>
+                <div className="flex flex-col animate-slide-up" style={{ animationDelay: '150ms' }}>
                   <OutfitRecommendation
                     weather={weatherData.current}
                     hourly={weatherData.hourly}

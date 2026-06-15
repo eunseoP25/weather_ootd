@@ -20,27 +20,27 @@ export function calculateApparentTemp(temp: number, windSpeed: number, humidity:
 }
 
 /**
- * Get clothing list by recommendation temperature
+ * Get clothing list by recommendation temperature (refined for all seasons)
  */
 export function getClothingListByTemp(temp: number): string[] {
-  if (temp >= 30) {
+  if (temp >= 28) {
     return ['민소매', '반팔 티셔츠', '반바지', '린넨 스커트'];
-  } else if (temp >= 25) {
-    return ['반팔 티셔츠', '얇은 셔츠', '면바지', '반바지'];
+  } else if (temp >= 23) {
+    return ['반팔 티셔츠', '얇은 셔츠', '면바지', '청바지', '슬랙스'];
   } else if (temp >= 20) {
-    return ['긴팔 티셔츠', '셔츠', '얇은 가디건', '후드집업', '슬랙스', '청바지'];
+    return ['긴팔 티셔츠', '셔츠', '청바지', '슬랙스'];
   } else if (temp >= 17) {
-    return ['니트', '맨투맨', '가디건', '후드집업', '청바지', '면바지'];
+    return ['얇은 가디건', '맨투맨', '후드티', '청바지', '면바지'];
   } else if (temp >= 12) {
-    return ['자켓', '가디건', '야상', '스타킹', '청바지', '재킷'];
+    return ['자켓', '가디건', '야상', '후드집업', '청바지', '슬랙스'];
   } else if (temp >= 9) {
-    return ['트렌치코트', '간절기 자켓', '니트', '청바지', '스타킹'];
+    return ['트렌치코트', '야상', '니트', '청바지', '기모 슬랙스'];
   } else if (temp >= 5) {
-    return ['코트', '히트텍', '가죽 자켓', '니트', '기모 바지'];
+    return ['울 코트', '가죽 자켓', '니트', '기모 바지', '히트텍'];
   } else if (temp >= 0) {
-    return ['두꺼운 코트', '울 코트', '목도리', '기모 슬랙스', '히트텍'];
+    return ['두꺼운 코트', '패딩 점퍼', '목도리', '기모 슬랙스', '히트텍'];
   } else {
-    return ['패딩 점퍼', '장갑', '목도리', '귀도리', '두꺼운 양말', '기모 안감 의류'];
+    return ['롱패딩', '패딩 점퍼', '장갑', '목도리', '귀도리', '두꺼운 양말', '기모 안감 의류'];
   }
 }
 
@@ -49,7 +49,8 @@ export function getClothingListByTemp(temp: number): string[] {
  */
 export function getClothingRecommendation(
   weather: CurrentWeather,
-  settings: UserSettings
+  settings: UserSettings,
+  isNight: boolean = false
 ): ClothingRecommendation {
   const { coldSensitivity, activityLevel } = settings;
   const apparentTemp = weather.apparentTemp;
@@ -65,9 +66,12 @@ export function getClothingRecommendation(
   if (activityLevel === 'indoor') activityOffset = -1;
   if (activityLevel === 'outdoor') activityOffset = 2;
 
+  // Day/Night offset: Night = -1.5°C (feels colder), Day = +1.5°C (feels warmer)
+  const dayNightOffset = isNight ? -1.5 : 1.5;
+
   // 2. Recommendation Temperature
-  // 추천온도 = 체감온도 + 체질보정값 + 활동량보정값
-  const recommendedTemp = Math.round((apparentTemp + sensitivityOffset + activityOffset) * 10) / 10;
+  // 추천온도 = 체감온도 + 체질보정값 + 활동량보정값 + 주야보정값
+  const recommendedTemp = Math.round((apparentTemp + sensitivityOffset + activityOffset + dayNightOffset) * 10) / 10;
 
   // 3. Get basic clothing recommendation
   const clothingList = [...getClothingListByTemp(recommendedTemp)];
@@ -75,6 +79,13 @@ export function getClothingRecommendation(
   // 4. Generate tips and warnings based on additional weather conditions
   const tips: string[] = [];
   const warnings: string[] = [];
+
+  // Add Day/Night explanation tip
+  if (isNight) {
+    tips.push('🌙 밤에는 햇빛이 없어 같은 기온이어도 더 쌀쌀하게 느껴지니 외출 시 가벼운 아우터를 챙겨 가세요.');
+  } else {
+    tips.push('☀️ 햇빛이 비치는 낮에는 기온보다 몸으로 느끼는 온도가 높으니 한결 가볍게 입으셔도 좋습니다.');
+  }
 
   // Wind speed condition
   if (weather.windSpeed >= 8) {
@@ -91,7 +102,6 @@ export function getClothingRecommendation(
   }
 
   // Rain or snow condition (PTY)
-  // PTY: 0 (없음), 1 (비), 2 (비/눈), 3 (눈), 4 (소나기)
   if (weather.pty > 0) {
     if (weather.pty === 1 || weather.pty === 2 || weather.pty === 4) {
       clothingList.push('레인부츠');
@@ -110,13 +120,12 @@ export function getClothingRecommendation(
   // Large temperature difference condition (Max/Min)
   const tempDiff = weather.tempMax - weather.tempMin;
   if (tempDiff >= 10) {
-    tips.push(`🌡️ 오늘 기온차(${tempDiff.toFixed(1)}°C)가 큽니다. 아침/저녁 추위에 대비해 탈착이 쉬운 겉옷을 챙기세요.`);
+    tips.push(`🌡️ 오늘 일교차(${tempDiff.toFixed(1)}°C)가 큽니다. 아침/저녁 추위에 대비해 쉽게 벗고 입을 수 있는 아우터를 챙기세요.`);
   }
 
   // Sun exposure condition (UV)
-  // If sunny (sky = 1) and temperature is warm/hot
-  if (weather.sky === 1 && weather.temp >= 22) {
-    tips.push('☀️ 햇빛이 쨍쨍합니다. 자외선 차단제와 모자 또는 선글라스를 챙기시는 것을 권장합니다.');
+  if (weather.sky === 1 && weather.temp >= 22 && !isNight) {
+    tips.push('☀️ 자외선이 강한 날입니다. 선크림을 꼼꼼히 바르고 선글라스나 모자를 착용하세요.');
   }
 
   // Fallbacks if lists are empty

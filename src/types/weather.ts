@@ -54,3 +54,10 @@ export interface ClothingRecommendation {
   tips: string[];
   warnings: string[];
 }
+
+export interface MyClothing {
+  id: string;
+  name: string;
+  category: 'outer' | 'top' | 'bottom' | 'shoes' | 'etc';
+  season: 'spring_autumn' | 'summer' | 'winter' | 'all';
+}

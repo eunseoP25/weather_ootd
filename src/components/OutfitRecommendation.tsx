@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shirt, Thermometer, ShieldAlert, Sparkles, Clock, Sun, Moon } from 'lucide-react';
+import { Shirt, Thermometer, ShieldAlert, Sparkles, Clock, Sun, Moon, Lightbulb } from 'lucide-react';
 import { CurrentWeather, UserSettings, HourlyForecast } from '../types/weather';
 import { getClothingRecommendation, calculateApparentTemp } from '../utils/recommend';
 
@@ -58,6 +58,10 @@ export const OutfitRecommendation: React.FC<OutfitRecommendationProps> = ({
   settings,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('now');
+
+  // Determine if it is currently night for the "지금" tab (hour >= 19 or < 6)
+  const currentHour = new Date().getHours();
+  const isNowNight = currentHour >= 19 || currentHour < 6;
 
   // 1. Resolve Weather for "지금"
   const nowWeather = weather;
@@ -121,8 +125,14 @@ export const OutfitRecommendation: React.FC<OutfitRecommendationProps> = ({
   };
 
   const targetWeather = getTargetWeather();
-  const recommendation = getClothingRecommendation(targetWeather, settings);
-  const { clothingList, warnings } = recommendation;
+
+  // Determine night flag for clothing offset matching
+  const isNightFlag = activeTab === 'now' 
+    ? isNowNight 
+    : activeTab === 'night'; // max tab is false (daytime)
+
+  const recommendation = getClothingRecommendation(targetWeather, settings, isNightFlag);
+  const { clothingList, warnings, tips } = recommendation;
 
   return (
     <div
@@ -184,7 +194,7 @@ export const OutfitRecommendation: React.FC<OutfitRecommendationProps> = ({
         </div>
 
         {/* Apparent Temperature Card UI */}
-        <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/30 dark:from-slate-800/40 dark:to-slate-800/10 border border-blue-100/40 dark:border-slate-800/40 rounded-2xl p-4 mb-5 flex items-center gap-4 shadow-sm">
+        <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/30 dark:from-slate-800/40 dark:to-slate-800/10 border border-blue-100/40 dark:border-slate-800/40 rounded-2xl p-4 mb-4 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0 shadow-sm">
             <Thermometer size={24} className="animate-pulse" />
           </div>
@@ -195,6 +205,22 @@ export const OutfitRecommendation: React.FC<OutfitRecommendationProps> = ({
             <p className="text-2xl font-black text-slate-800 dark:text-slate-100">
               {targetWeather.apparentTemp.toFixed(1)}<span className="text-lg font-bold">°C</span>
             </p>
+          </div>
+        </div>
+
+        {/* Dynamic Outing Tips section */}
+        <div className="mb-4 bg-amber-50/35 dark:bg-amber-950/15 border border-amber-100/35 dark:border-amber-900/35 rounded-2xl p-4 shadow-xs">
+          <h4 className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <Lightbulb size={13} className="text-amber-500 shrink-0" />
+            외출 준비 팁
+          </h4>
+          <div className="flex flex-col gap-2">
+            {tips.map((tip, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-xs font-semibold text-slate-650 dark:text-slate-300 leading-relaxed">
+                <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                <p>{tip}</p>
+              </div>
+            ))}
           </div>
         </div>
 
